@@ -2,7 +2,7 @@ name: EconomyLand
 main: onebone\economyland\EconomyLand
 api: [4.0.0]
 
-version: "2.0.10PM"
+version: "2.0.9PM-PMMP4.0.0"
 author: onebone
 
 permissions:
