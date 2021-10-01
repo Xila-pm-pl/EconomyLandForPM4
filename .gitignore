@@ -3,6 +3,8 @@ Economy*/*.*
 .idea
 /*
 !/src*
+!/resources*
 !/LICENSE
 !/README.md
 !.gitignore
+!/plugin.yml
