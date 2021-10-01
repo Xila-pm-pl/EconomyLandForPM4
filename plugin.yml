@@ -1,6 +1,6 @@
 name: EconomyLand
 main: onebone\economyland\EconomyLand
-api: [3.0.0, 4.0.0]
+api: [4.0.0]
 
 version: "2.0.10PM"
 author: onebone
