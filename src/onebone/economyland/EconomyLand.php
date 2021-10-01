@@ -21,7 +21,6 @@
 namespace onebone\economyland;
 
 use Closure;
-use onebone\economyapi\EconomyAPI;
 use onebone\economyland\database\Database;
 use onebone\economyland\database\YamlDatabase;
 use pocketmine\command\Command;
@@ -60,7 +59,7 @@ class EconomyLand extends PluginBase implements Listener {
 		return static::$instance;
 	}
 
-	public function onEnable() {
+	public function onEnable(): void {
 		if(!static::$instance instanceof EconomyLand) {
 			static::$instance = $this;
 		}
@@ -167,7 +166,7 @@ class EconomyLand extends PluginBase implements Listener {
 		return;
 	}
 
-	public function onDisable() {
+	public function onDisable(): void {
 		$this->save();
 		if($this->db instanceof Database) {
 			$this->db->close();
@@ -296,12 +295,14 @@ class EconomyLand extends PluginBase implements Listener {
 							$sender->sendMessage($this->getMessage("land-around-here", array($result["owner"], $result["ID"], "%3")));
 							return true;
 						}
+						$buyerMoney = $this->getServer()->getPluginManager()->getPlugin("PocketMoney")->getMoney($sender->getName());
 						$price = ((($endX + 1) - ($startX - 1)) - 1) * ((($endZ + 1) - ($startZ - 1)) - 1) * $this->getConfig()->get("price-per-y-axis", 100);
-						if(EconomyAPI::getInstance()->reduceMoney($sender, $price, null, null, true) === EconomyAPI::RET_INVALID) {
+						if($buyerMoney < $price) {
 							$sender->sendMessage($this->getMessage("no-money-to-buy-land"));
 							return true;
 						}
 
+						$this->getServer()->getPluginManager()->getPlugin("PocketMoney")->setMoney($sender->getName(), $buyerMoney - $price);
 						$this->db->addLand($startX, $endX, $startZ, $endZ, $sender->getWorld()->getFolderName(), $price, $sender->getName());
 						unset($this->start[$sender->getName()], $this->end[$sender->getName()]);
 						$sender->sendMessage($this->getMessage("bought-land", array($price, "%2", "%3")));
@@ -582,27 +583,31 @@ class EconomyLand extends PluginBase implements Listener {
 						if($info["owner"] !== $sender->getName() and !$sender->hasPermission("economyland.landsell.others")) {
 							$sender->sendMessage($this->getMessage("not-my-land"));
 						}else{
-							EconomyAPI::getInstance()->addMoney($sender, $info["price"] / 2);
-							$sender->sendMessage($this->getMessage("sold-land", array(($info["price"] / 2), "%2", "%3")));
-							//$this->land->exec("DELETE FROM land WHERE ID = {$info["ID"]}");
+							$buyerMoney = $this->getServer()->getPluginManager()->getPlugin("PocketMoney")->getMoney($sender->getName());
+							$price = $info["price"] / 2;
+							$this->getServer()->getPluginManager()->getPlugin("PocketMoney")->setMoney($sender->getName(), $buyerMoney + $price);
+							$sender->sendMessage($this->getMessage("sold-land", array(($price), "%2", "%3")));
+						//$this->land->exec("DELETE FROM land WHERE ID = {$info["ID"]}");
 							$this->db->removeLandById($info["ID"]);
 						}
 						return true;
 					default:
 						$p = $id;
 						if(is_numeric($p)) {
+							$buyerMoney = $this->getServer()->getPluginManager()->getPlugin("PocketMoney")->getMoney($sender->getName());
 							$info = $this->db->getLandById($p);
+							$price = $info["price"] / 2;
 							if($info === false) {
 								$sender->sendMessage($this->getMessage("no-land-found", array($p, "%2", "%3")));
 								return true;
 							}
 							if($info["owner"] === $sender->getName() or $sender->hasPermission("economyland.landsell.others")) {
-								EconomyAPI::getInstance()->addMoney($sender, ($info["price"] / 2), null, null, true);
+								$this->getServer()->getPluginManager()->getPlugin("PocketMoney")->setMoney($sender->getName(), $buyerMoney + $price);
 								$sender->sendMessage($this->getMessage("sold-land", array(($info["price"] / 2), "", "")));
 
 								$this->db->removeLandById($p);
 							}else{
-								$sender->sendMessage($this->getMessage("not-your-land", array($p, $info["owner"], "%3")));
+								$sender->sendMessage($this->getMessage("not-your-land", array($p, $price_half, "%3")));
 							}
 						}else{
 							$sender->sendMessage("Usage: /landsell <here|land number>");
@@ -615,7 +620,7 @@ class EconomyLand extends PluginBase implements Listener {
 
 	public function getMessage($key, $value = array("%1", "%2", "%3")) {
 		if($this->lang->exists($key)) {
-			return str_replace(array("%MONETARY_UNIT%", "%1", "%2", "%3", "\\n"), array(EconomyAPI::getInstance()->getMonetaryUnit(), $value[0], $value[1], $value[2], "\n"), $this->lang->get($key));
+			return str_replace(array("%MONETARY_UNIT%", "%1", "%2", "%3", "\\n"), array("PM", $value[0], $value[1], $value[2], "\n"), $this->lang->get($key));
 		}
 		return "Couldn't find message \"$key\"";
 	}
@@ -635,9 +640,9 @@ class EconomyLand extends PluginBase implements Listener {
 			$block = $event->getBlock();
 		}
 
-		$x = $block->getPos()->getX();
-		$z = $block->getPos()->getZ();
-		$level = $block->getPos()->getWorld()->getFolderName();
+		$x = $block->getPosition()->getX();
+		$z = $block->getPosition()->getZ();
+		$level = $block->getPosition()->getWorld()->getFolderName();
 
 		if(in_array($level, $this->getConfig()->get("non-check-worlds", []))) {
 			return false;
