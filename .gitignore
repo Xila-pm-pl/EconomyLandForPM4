@@ -2,7 +2,7 @@ Economy*/*.*
 !Economy*/plugin.yml
 .idea
 /*
-!/Economy*
+!/src*
 !/LICENSE
 !/README.md
 !.gitignore
