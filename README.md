@@ -1,8 +1,8 @@
 # EconomyS
-The economy plugin for PocketMine-MP.
+The economy plugin for PocketMine-MP. Will be adding support for new soon
 
 ## Download
-[Jenkins](https://jenkins.onebone.me/job/EconomyS/)
+under development
 
 ## EconomyAPI commands
 
